@@ -141,11 +141,11 @@ def get_mean_scores_for_all_segments(qtm_obj, object, marker, segment_size=3, se
     total_size = len(qtm_obj.data[object, marker, 0, :])
     # Segments of segment_size seconds
     number_of_segments = math.ceil((total_size / qtm_obj.frame_rate) / segment_size) - (segment_size * 2)
-    print(f"total size (num of frames): {total_size}, number of segments: {number_of_segments})")
+    # print(f"total size (num of frames): {total_size}, number of segments: {number_of_segments})")
     smoothness_comparator = SmoothnessMeasurement(qtm_obj, object, marker, sample_freq=sample_freq, padlevel=padlevel, freq_cutoff=freq_cutoff, amp_th=amp_th)
-    print(f"ITERATING FROM {segment_margin} TO {number_of_segments * segment_size} (jumps of {segment_size})")
+    # print(f"ITERATING FROM {segment_margin} TO {number_of_segments * segment_size} (jumps of {segment_size})")
     for i, segment_start in enumerate(np.arange(segment_margin, number_of_segments * segment_size, segment_size)):
-        print(f"Seg number {i}: {segment_start} - {segment_start + segment_size}")
+        # print(f"Seg number {i}: {segment_start} - {segment_start + segment_size}")
         smoothness_comparator.set_segment_start(segment_start)
         smoothness_comparator.set_segment_end(segment_start + segment_size)
         if segment_start + segment_size > number_of_segments * segment_size:
@@ -158,7 +158,7 @@ def get_mean_scores_for_all_segments(qtm_obj, object, marker, segment_size=3, se
             jerk_score_of_seg = smoothness_comparator.get_dimensionless_jerk()
             scores["sparc"].append(sparc_score_of_seg)
             scores["jerk"].append(jerk_score_of_seg)
-            print(f"Scores for segment {segment_start} - {segment_start + segment_size}: sparc {sparc_score_of_seg}, jerk {jerk_score_of_seg}")
+            # print(f"Scores for segment {segment_start} - {segment_start + segment_size}: sparc {sparc_score_of_seg}, jerk {jerk_score_of_seg}")
         except ZeroDivisionError:
             print(f"got zero division error for segment {segment_start}-{segment_start+segment_size}")
             break
