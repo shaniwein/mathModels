@@ -31,7 +31,6 @@ class SmoothnessMeasurement:
 
     @property
     def speed_profile(self):
-        print(f"Speed profile for start frame: {self.start_frame}, to end frame: {self.end_frame}")
         return np.linalg.norm(self.qtm_obj.velocities[self.object, self.marker, :, self.start_frame:self.end_frame], axis=0)
     
     def set_segment_start(self, new_start):
