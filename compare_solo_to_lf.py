@@ -1,6 +1,8 @@
 import os
 import re
-from collections import namedtuple
+import numpy as np
+from collections import namedtuple, defaultdict
+from matplotlib import pyplot as plt
 from qtmWrapper.qtm import QTM
 import smoothnessMeasurement
 
@@ -56,14 +58,36 @@ def get_player_follower_score(marker, player: PlayerData):
     return SmoothnessScore(*smoothnessMeasurement.get_mean_scores_for_all_segments(qtm_obj, object=get_follower_from_lf_path(player.follower_filename), marker=marker))
 
 def get_scores_of_players_for_markers(players, markers):
+    scores_by_markers = defaultdict(dict)
     for marker in markers:
         for player in players:
             solo_scores = get_player_solo_scores(marker, player)
             follower_score = get_player_follower_score(marker, player)
+            scores_by_markers[marker] = {player.id: [solo_scores, follower_score]}
         print(f"\n(Marker: {marker}, Player: {player.id}) Solo: {solo_scores}, Follower: {follower_score}")
+    return scores_by_markers
+
+def plot_metric_of_solo_vs_lf(scores, metric):
+    title_params = dict(fontsize=10, loc="left")
+    # TODO: Make generic for all markers?
+    scores = scores[0]
+    _, ax = plt.subplots()
+    for p_id, p_scores in scores.items():
+        for solo_score in p_scores[0]:
+            ax.scatter(x=p_id, y=getattr(solo_score, metric), label="solo", color="blue")
+        ax.scatter(x=p_id, y=getattr(p_scores[1], metric), label="follower", color="green")
+    plt.xticks(list(scores.keys()))
+    ax.set_title(f"{metric.upper()} score of solo and follower for each player", **title_params)
+    ax.set_xlabel("Player ID", fontsize=8)
+    ax.set_ylabel("Score", fontsize=8)
+    # ax.tick_params(axis='both', which='major', labelsize=self.labelsize)
+    ax.legend()
+    plt.show()
 
 def main():
-    get_scores_of_players_for_markers(players_data, markers_of_interest)
+    scores_by_markers = get_scores_of_players_for_markers(players_data, markers_of_interest)
+    plot_metric_of_solo_vs_lf(scores_by_markers, "sparc")
+    plot_metric_of_solo_vs_lf(scores_by_markers, "jerk")
 
 if __name__ == '__main__':
     main()
