@@ -30,7 +30,6 @@ def get_total_psd(total_psd, qtm_obj, selected_markers, num_of_subjects=1, playe
     solo_psd = psd_obj._analyze_psd(magnitude_data[0:player_ind + 1, ...], psd_obj.qtm.time,
                                     psd_obj.qtm.labels[player_ind],
                                     qtm_types.DataType.MARKERS, qtm_types.AnalysisType.VELOCITY, False, True)
-    print(selected_markers)
     total_psd = np.add(total_psd, solo_psd.psd[0][selected_markers])
     return total_psd
 
@@ -54,6 +53,14 @@ solo_selected_markers = [2, 7, 9, 12, 14, 17, 21, 28]
 
 ks_pval = np.empty(8)
 ad_pval = np.empty(8)
+ks_sig = []
+ad_sig = []
+# for jitter freq
+ks_pval_jitter = np.empty(8)
+ad_pval_jitter = np.empty(8)
+ks_sig_jitter = []
+ad_sig_jitter = []
+
 for player in players_data:
     ## collect solo data
     total_solo_psd = np.zeros((8, 1, 39))
@@ -64,9 +71,10 @@ for player in players_data:
         total_solo_psd =get_total_psd(total_solo_psd, qtm_obj, solo_selected_markers, 1)
     solo_psd_sum = total_solo_psd.sum(axis=2)
     normalized_solo_psd = np.empty((8, 39))
+    normalized_solo_jitter_psd = np.empty((8, 6))
     for i in range(8):
         normalized_solo_psd[i] = total_solo_psd[i][0]/solo_psd_sum[i]
-
+        normalized_solo_jitter_psd[i] = total_solo_psd[i][0][:6]/solo_psd_sum[i]
     ## collect duet data
     total_duet_psd = np.zeros((8, 1, 39))
     for duet in range(len(player.follower_filename)):
@@ -76,24 +84,91 @@ for player in players_data:
         total_duet_psd = get_total_psd(total_duet_psd, qtm_obj, duet_selected_markers, 2, player.follower_indexs[duet])
     duet_psd_sum = total_duet_psd.sum(axis=2)
     normalized_duet_psd = np.empty((8, 39))
+    normalized_duet_jitter_psd = np.empty((8, 6))
     for marker in range(8):
         normalized_duet_psd[marker] = total_duet_psd[marker][0]/duet_psd_sum[marker]
+        normalized_duet_jitter_psd[marker] = total_duet_psd[marker][0][:6]/duet_psd_sum[marker]
 
     ## compare solo and LF distributions for given player and marker
         ks_result = scipy.stats.ks_2samp(normalized_solo_psd[marker], normalized_duet_psd[marker])
         ad_result = scipy.stats.anderson_ksamp((normalized_solo_psd[marker],normalized_duet_psd[marker]), midrank=True) ##pvalue floored at 0.001
         ks_pval[marker] = ks_result[1]
         ad_pval[marker] = ad_result[2]
-    plt.title(f"kolmogorov-smirnov player {player.id}")
-    plt.ylabel("pvalue")
-    plt.xlabel("marker")
-    plt.xticks([i for i in range(len(ks_pval))], ["HeadFront", "LElbowOut", "LHand2", "RElbowOut", "RHand2", "WaistBack", "LKneeOut", "RKneeOut"])
-    plt.scatter([i for i in range(len(ks_pval))], ks_pval)
-    plt.show()
+    ## same for jitter frequencies only
+        ks_jitter_result = scipy.stats.ks_2samp(normalized_solo_jitter_psd[marker], normalized_duet_jitter_psd[marker])
+        ad_jitter_result = scipy.stats.anderson_ksamp((normalized_solo_jitter_psd[marker], normalized_duet_jitter_psd[marker]),
+                                               midrank=True)  ##pvalue floored at 0.001
+        ks_pval_jitter[marker] = ks_jitter_result[1]
+        ad_pval_jitter[marker] = ad_jitter_result[2]
 
-    plt.title(f"anderson-darling player {player.id}")
-    plt.ylabel("pvalue")
-    plt.xlabel("marker")
-    plt.xticks([i for i in range(len(ad_pval))], ["HeadFront", "LElbowOut", "LHand2", "RElbowOut", "RHand2", "WaistBack", "LKneeOut", "RKneeOut"])
-    plt.scatter([i for i in range(len(ad_pval))], ad_pval)
-    plt.show()
+    ks_sig.append(ks_pval < 0.05)
+    ad_sig.append(ad_pval < 0.05)
+    ## same for jitter frequencies only
+    ks_sig_jitter.append(ks_pval_jitter < 0.05)
+    ad_sig_jitter.append(ad_pval_jitter < 0.05)
+
+
+    ##plot results
+    # plt.title(f"kolmogorov-smirnov player {player.id}")
+    # plt.ylabel("log pvalue")
+    # plt.xlabel("marker")
+    # plt.xticks([i for i in range(len(ks_pval))], ["HeadFront", "LElbowOut", "LHand2", "RElbowOut", "RHand2", "WaistBack", "LKneeOut", "RKneeOut"], fontsize = 6)
+    # plt.scatter([i for i in range(len(ks_pval))], np.log(ks_pval))
+    # plt.plot([i for i in range(len(ks_pval))], [np.log(0.05) for i in range(len(ks_pval))], color = 'red')
+    # plt.savefig(f"kolmogorov-smirnov player {player.id}.png")
+    # plt.show()
+    #
+    # plt.title(f"anderson-darling player {player.id}")
+    # plt.ylabel("log pvalue")
+    # plt.xlabel("marker")
+    # plt.plot([i for i in range(len(ad_pval))], [np.log(0.05) for i in range(len(ad_pval))], color = 'red')
+    # plt.xticks([i for i in range(len(ad_pval))], ["HeadFront", "LElbowOut", "LHand2", "RElbowOut", "RHand2", "WaistBack", "LKneeOut", "RKneeOut"], fontsize = 6)
+    # plt.scatter([i for i in range(len(ad_pval))], np.log(ad_pval))
+    # plt.savefig(f"anderson-darling player {player.id}.png")
+    # plt.show()
+    ##Jitter freqs
+    # plt.title(f"kolmogorov-smirnov player {player.id} Jitter frequencies")
+    # plt.ylabel("log pvalue")
+    # plt.xlabel("marker")
+    # plt.xticks([i for i in range(len(ks_pval_jitter))], ["HeadFront", "LElbowOut", "LHand2", "RElbowOut", "RHand2", "WaistBack", "LKneeOut", "RKneeOut"], fontsize = 6)
+    # plt.scatter([i for i in range(len(ks_pval_jitter))], np.log(ks_pval_jitter))
+    # plt.plot([i for i in range(len(ks_pval_jitter))], [np.log(0.05) for i in range(len(ks_pval_jitter))], color = 'red')
+    # plt.savefig(f"kolmogorov-smirnov player - Jitter frequencies {player.id}.png")
+    # plt.show()
+    #
+    # plt.title(f"anderson-darling player {player.id} Jitter frequencies")
+    # plt.ylabel("log pvalue")
+    # plt.xlabel("marker")
+    # plt.plot([i for i in range(len(ad_pval_jitter))], [np.log(0.05) for i in range(len(ad_pval_jitter))], color = 'red')
+    # plt.xticks([i for i in range(len(ad_pval_jitter))], ["HeadFront", "LElbowOut", "LHand2", "RElbowOut", "RHand2", "WaistBack", "LKneeOut", "RKneeOut"], fontsize = 6)
+    # plt.scatter([i for i in range(len(ad_pval_jitter))], np.log(ad_pval_jitter))
+    # plt.savefig(f"anderson-darling player - Jitter frequencies {player.id}.png")
+    # plt.show()
+
+## plot percentage of players with sig difference btwn LS and solo
+plt.bar([i for i in range(len(ks_pval))], np.sum(ks_sig, axis = 0)/len(ks_sig)*100)
+plt.title("Percntage of dancers with significant difference (kolmogorov-smirnov)")
+plt.xticks([i for i in range(len(ad_pval))], ["HeadFront", "LElbowOut", "LHand2", "RElbowOut", "RHand2", "WaistBack", "LKneeOut", "RKneeOut"], fontsize = 6)
+plt.ylabel("percentage")
+plt.savefig("Percntage of dancers with significant difference (kolmogorov-smirnov).png")
+plt.show()
+plt.bar([i for i in range(len(ad_pval))], np.sum(ad_sig, axis = 0)/len(ad_sig)*100)
+plt.ylabel("percentage")
+plt.title("Percntage of dancers with significant difference (anderson-darling)")
+plt.xticks([i for i in range(len(ad_pval))], ["HeadFront", "LElbowOut", "LHand2", "RElbowOut", "RHand2", "WaistBack", "LKneeOut", "RKneeOut"], fontsize = 6)
+plt.savefig("Percntage of dancers with significant difference (anderson-darling).png")
+plt.show()
+
+## Jitter frequencies
+plt.bar([i for i in range(len(ks_pval_jitter))], np.sum(ks_sig_jitter, axis = 0)/len(ks_sig_jitter)*100)
+plt.title("Percntage of dancers with significant difference (kolmogorov-smirnov) - Jitter frequencies")
+plt.xticks([i for i in range(len(ad_pval_jitter))], ["HeadFront", "LElbowOut", "LHand2", "RElbowOut", "RHand2", "WaistBack", "LKneeOut", "RKneeOut"], fontsize = 6)
+plt.ylabel("percentage")
+plt.savefig("Percntage of dancers with significant difference - Jitter frequencies (kolmogorov-smirnov).png")
+plt.show()
+plt.bar([i for i in range(len(ad_pval_jitter))], np.sum(ad_sig_jitter, axis = 0)/len(ad_sig_jitter)*100)
+plt.ylabel("percentage")
+plt.title("Percntage of dancers with significant difference (anderson-darling) - Jitter frequencies")
+plt.xticks([i for i in range(len(ad_pval_jitter))], ["HeadFront", "LElbowOut", "LHand2", "RElbowOut", "RHand2", "WaistBack", "LKneeOut", "RKneeOut"], fontsize = 6)
+plt.savefig("Percntage of dancers with significant difference  - Jitter frequencies (anderson-darling).png")
+plt.show()
