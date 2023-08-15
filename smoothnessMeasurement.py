@@ -135,8 +135,8 @@ def plot_all_coords_by_marker(marker, qtm_obj, object, segment_margin, file_name
 """
 Returns the mean scores of sparc and jerk calculated on the data without segment_margin at beggining and end in segments of segment_size.
 """
-def get_mean_scores_for_all_segments(qtm_obj, object, marker, segment_size=3, segment_margin=8, sample_freq=500, padlevel=4, freq_cutoff=5, amp_th=0.05):
-    scores = {"sparc": [], "jerk": []}
+def get_scores_for_all_segments(qtm_obj, object, marker, segment_size=30, segment_margin=4, sample_freq=500, padlevel=4, freq_cutoff=5, amp_th=0.05):
+    scores = {"sparc": [], "jerk": [], "log_jerk": []}
     total_size = len(qtm_obj.data[object, marker, 0, :])
     # Segments of segment_size seconds
     number_of_segments = math.ceil((total_size / qtm_obj.frame_rate) / segment_size) - (segment_size * 2)
@@ -155,10 +155,13 @@ def get_mean_scores_for_all_segments(qtm_obj, object, marker, segment_size=3, se
                 continue
             sparc_score_of_seg = smoothness_comparator.get_sparc()[0]
             jerk_score_of_seg = smoothness_comparator.get_dimensionless_jerk()
+            log_jerk_score_of_seg = smoothness_comparator.get_log_dimensionless_jerk()
             scores["sparc"].append(sparc_score_of_seg)
             scores["jerk"].append(jerk_score_of_seg)
+            scores["log_jerk"].append(log_jerk_score_of_seg)
             # print(f"Scores for segment {segment_start} - {segment_start + segment_size}: sparc {sparc_score_of_seg}, jerk {jerk_score_of_seg}")
         except ZeroDivisionError:
             print(f"got zero division error for segment {segment_start}-{segment_start+segment_size}")
             break
-    return np.mean(scores["sparc"]), np.mean(scores["jerk"])
+    return scores
+    # return np.mean(scores["sparc"]), np.mean(scores["jerk"])
