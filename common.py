@@ -50,4 +50,4 @@ def select_marker_by_tag(qtm_obj, player, ind, tag):
     for i, label in np.ndenumerate(qtm_obj.labels[ind]):
         if label == wanted_label:
             return i[0]
-    raise ValueError(f"tag {tag} not found in {qtm_obj.labels[ind]}")
+    raise ValueError(f"label {wanted_label} not found in {qtm_obj.labels[ind]}")

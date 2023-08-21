@@ -135,11 +135,11 @@ def plot_all_coords_by_marker(marker, qtm_obj, object, segment_margin, file_name
 """
 Returns the mean scores of sparc and jerk calculated on the data without segment_margin at beggining and end in segments of segment_size.
 """
-def get_scores_for_all_segments(qtm_obj, object, marker, segment_size=30, segment_margin=4, sample_freq=500, padlevel=4, freq_cutoff=5, amp_th=0.05):
+def get_scores_for_all_segments(qtm_obj, object, marker, segment_size=30, segment_margin=0, sample_freq=500, padlevel=4, freq_cutoff=5, amp_th=0.05):
     scores = {"sparc": [], "jerk": [], "log_jerk": []}
     total_size = len(qtm_obj.data[object, marker, 0, :])
     # Segments of segment_size seconds
-    number_of_segments = math.ceil((total_size / qtm_obj.frame_rate) / segment_size) - (segment_size * 2)
+    number_of_segments = math.ceil((total_size / qtm_obj.frame_rate) / segment_size) - (segment_margin * 2)
     # print(f"total size (num of frames): {total_size}, number of segments: {number_of_segments})")
     smoothness_comparator = SmoothnessMeasurement(qtm_obj, object, marker, sample_freq=sample_freq, padlevel=padlevel, freq_cutoff=freq_cutoff, amp_th=amp_th)
     # print(f"ITERATING FROM {segment_margin} TO {number_of_segments * segment_size} (jumps of {segment_size})")
@@ -148,6 +148,7 @@ def get_scores_for_all_segments(qtm_obj, object, marker, segment_size=30, segmen
         smoothness_comparator.set_segment_start(segment_start)
         smoothness_comparator.set_segment_end(segment_start + segment_size)
         if segment_start + segment_size > number_of_segments * segment_size:
+            # print(f"breaking at {segment_start} because {segment_start + segment_size} > {number_of_segments * segment_size}")
             break
         try:
             if smoothness_comparator.speed_profile.shape[0] == 0:
@@ -163,5 +164,6 @@ def get_scores_for_all_segments(qtm_obj, object, marker, segment_size=30, segmen
         except ZeroDivisionError:
             print(f"got zero division error for segment {segment_start}-{segment_start+segment_size}")
             break
+    # print(f"returning scores: {scores}")
     return scores
     # return np.mean(scores["sparc"]), np.mean(scores["jerk"])
