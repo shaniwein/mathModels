@@ -107,6 +107,30 @@ for player in players_data:
     ks_sig_jitter.append(ks_pval_jitter < 0.05)
     ad_sig_jitter.append(ad_pval_jitter < 0.05)
 
+    freqs = [ 0.732,  0.977,  1.221,  1.465,  1.709,  1.953]
+    fig, axes = plt.subplots(2, 4, sharey=True, figsize=(12, 8))
+    # Plot jitter frequencies for each player and marker
+    for i, marker_tag in enumerate(
+            ["HeadFront", "LElbowOut", "LHand2", "RElbowOut", "RHand2", "WaistBack", "LKneeOut", "RKneeOut"]):
+        row = i // 4
+        col = i % 4
+
+        axes[row, col].scatter(
+            x=list(freqs),
+            y=normalized_solo_jitter_psd[i],
+            label="solo",
+            color='blue')
+        axes[row, col].scatter(
+            x=list(freqs),
+            y=normalized_duet_jitter_psd[i],
+            label="LF",
+            color='red')
+        axes[row, col].set_title(marker_tag)
+        axes[row, col].set_xlabel("frequency")
+        axes[row, col].set_ylabel("density")
+    plt.suptitle(f"Jitter frequencies for player {player.id}")
+    plt.tight_layout()
+    plt.show()
 
     ##plot results
     # plt.title(f"kolmogorov-smirnov player {player.id}")
@@ -146,29 +170,31 @@ for player in players_data:
     # plt.show()
 
 ## plot percentage of players with sig difference btwn LS and solo
-plt.bar([i for i in range(len(ks_pval))], np.sum(ks_sig, axis = 0)/len(ks_sig)*100)
-plt.title("Percntage of dancers with significant difference (kolmogorov-smirnov)")
-plt.xticks([i for i in range(len(ad_pval))], ["HeadFront", "LElbowOut", "LHand2", "RElbowOut", "RHand2", "WaistBack", "LKneeOut", "RKneeOut"], fontsize = 6)
-plt.ylabel("percentage")
-plt.savefig("Percntage of dancers with significant difference (kolmogorov-smirnov).png")
-plt.show()
-plt.bar([i for i in range(len(ad_pval))], np.sum(ad_sig, axis = 0)/len(ad_sig)*100)
-plt.ylabel("percentage")
-plt.title("Percntage of dancers with significant difference (anderson-darling)")
-plt.xticks([i for i in range(len(ad_pval))], ["HeadFront", "LElbowOut", "LHand2", "RElbowOut", "RHand2", "WaistBack", "LKneeOut", "RKneeOut"], fontsize = 6)
-plt.savefig("Percntage of dancers with significant difference (anderson-darling).png")
-plt.show()
+# plt.bar([i for i in range(len(ks_pval))], np.sum(ks_sig, axis = 0)/len(ks_sig)*100)
+# plt.title("Percntage of dancers with significant difference (kolmogorov-smirnov)")
+# plt.xticks([i for i in range(len(ad_pval))], ["HeadFront", "LElbowOut", "LHand2", "RElbowOut", "RHand2", "WaistBack", "LKneeOut", "RKneeOut"], fontsize = 6)
+# plt.ylabel("percentage")
+# plt.savefig("Percntage of dancers with significant difference (kolmogorov-smirnov).png")
+# plt.show()
+# plt.bar([i for i in range(len(ad_pval))], np.sum(ad_sig, axis = 0)/len(ad_sig)*100)
+# plt.ylabel("percentage")
+# plt.title("Percntage of dancers with significant difference (anderson-darling)")
+# plt.xticks([i for i in range(len(ad_pval))], ["HeadFront", "LElbowOut", "LHand2", "RElbowOut", "RHand2", "WaistBack", "LKneeOut", "RKneeOut"], fontsize = 6)
+# plt.savefig("Percntage of dancers with significant difference (anderson-darling).png")
+# plt.show()
 
 ## Jitter frequencies
-plt.bar([i for i in range(len(ks_pval_jitter))], np.sum(ks_sig_jitter, axis = 0)/len(ks_sig_jitter)*100)
-plt.title("Percntage of dancers with significant difference (kolmogorov-smirnov) - Jitter frequencies")
-plt.xticks([i for i in range(len(ad_pval_jitter))], ["HeadFront", "LElbowOut", "LHand2", "RElbowOut", "RHand2", "WaistBack", "LKneeOut", "RKneeOut"], fontsize = 6)
-plt.ylabel("percentage")
-plt.savefig("Percntage of dancers with significant difference - Jitter frequencies (kolmogorov-smirnov).png")
-plt.show()
-plt.bar([i for i in range(len(ad_pval_jitter))], np.sum(ad_sig_jitter, axis = 0)/len(ad_sig_jitter)*100)
-plt.ylabel("percentage")
-plt.title("Percntage of dancers with significant difference (anderson-darling) - Jitter frequencies")
-plt.xticks([i for i in range(len(ad_pval_jitter))], ["HeadFront", "LElbowOut", "LHand2", "RElbowOut", "RHand2", "WaistBack", "LKneeOut", "RKneeOut"], fontsize = 6)
-plt.savefig("Percntage of dancers with significant difference  - Jitter frequencies (anderson-darling).png")
-plt.show()
+# plt.bar([i for i in range(len(ks_pval_jitter))], np.sum(ks_sig_jitter, axis = 0)/len(ks_sig_jitter)*100)
+# plt.title("Percntage of dancers with significant difference (kolmogorov-smirnov) - Jitter frequencies", fontsize = 9)
+# plt.xticks([i for i in range(len(ad_pval_jitter))], ["HeadFront", "LElbowOut", "LHand2", "RElbowOut", "RHand2", "WaistBack", "LKneeOut", "RKneeOut"], fontsize = 6)
+# plt.ylabel("percentage")
+# plt.ylim(0,100)
+# plt.savefig("Percntage of dancers with significant difference - Jitter frequencies (kolmogorov-smirnov).png")
+# plt.show()
+# plt.bar([i for i in range(len(ad_pval_jitter))], np.sum(ad_sig_jitter, axis = 0)/len(ad_sig_jitter)*100)
+# plt.ylabel("percentage")
+# plt.title("Percntage of dancers with significant difference (anderson-darling) - Jitter frequencies", fontsize = 9)
+# plt.xticks([i for i in range(len(ad_pval_jitter))], ["HeadFront", "LElbowOut", "LHand2", "RElbowOut", "RHand2", "WaistBack", "LKneeOut", "RKneeOut"], fontsize = 6)
+# plt.ylim(0,100)
+# plt.savefig("Percntage of dancers with significant difference  - Jitter frequencies (anderson-darling).png")
+# plt.show()
