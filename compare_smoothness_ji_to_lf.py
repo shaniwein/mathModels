@@ -25,11 +25,20 @@ def get_dump_path(file_path):
     return file_path.split(".")[0] + "_interpolated_mirrored_qtm.npz"
 
 # TODO: Fix!
-def get_ji_object_id(filename_index, player: PlayerData):
-    return player.ji_indexes[filename_index]
+def get_ji_object_id(filename, player: PlayerData):
+# def get_ji_object_id(filename_index, player: PlayerData):
+    # return player.ji_indexes[filename_index]
+    p = re.compile(r'\d+')
+    obj0, obj1 = list(map(int, p.findall(filename)))
+    print(f"obj0={obj0}, obj1={obj1}")
+    if obj0 != player.id and obj1 != player.id:
+        raise ValueError(f"player {player.id} not found in filename {filename}")
+    return 0 if obj0 == player.id else 1
 
-def get_ji_marker_id(qtm_obj, filename_index, marker_tag, player: PlayerData):
-    return select_marker_by_tag(qtm_obj, player, player.ji_indexs[filename_index], marker_tag)
+def get_ji_marker_id(qtm_obj, marker_tag, object_id, player: PlayerData):
+# def get_ji_marker_id(qtm_obj, filename_index, marker_tag, player: PlayerData):
+    return select_marker_by_tag(qtm_obj, player, object_id, marker_tag)
+    # return select_marker_by_tag(qtm_obj, player, player.ji_indexs[filename_index], marker_tag)
 
 ############
 
@@ -44,9 +53,11 @@ def get_player_ji_scores(marker_tag, player: PlayerData):
     for i, filename in enumerate(player.ji_filenames):
         ji_filepath = os.path.join(DATA_FILES_PATH, filename)
         qtm_obj = QTM(ji_filepath, save_path=get_dump_path(ji_filepath), load=load_from_dump, 
-                       num_of_subjects=1, markers_permutation_vector=markers_permutation_vector, skeleton=skeleton, fix_jumps=fix_jumps, interpolate=True, smoothing_factor=smoothing_factor)
+                       num_of_subjects=2, markers_permutation_vector=markers_permutation_vector, skeleton=skeleton, fix_jumps=fix_jumps, interpolate=True, smoothing_factor=smoothing_factor)
         # TODO: Find the right object num (and put in players data like follower indexes)
-        scores = smoothnessMeasurement.get_scores_for_all_segments(qtm_obj, object=get_ji_object_id(i, player), marker=get_ji_marker_id(qtm_obj, i, marker_tag, player), segment_size=30)
+        # scores = smoothnessMeasurement.get_scores_for_all_segments(qtm_obj, object=get_ji_object_id(i, player), marker=get_ji_marker_id(qtm_obj, i, marker_tag, player), segment_size=30)
+        obj_id = get_ji_object_id(filename, player)
+        scores = smoothnessMeasurement.get_scores_for_all_segments(qtm_obj, object=obj_id, marker=get_ji_marker_id(qtm_obj, marker_tag, obj_id, player), segment_size=30)
         sparc_scores.extend(scores["sparc"])
         jerk_scores.extend(scores["jerk"])
         log_jerk_scores.extend(scores["log_jerk"])
@@ -54,7 +65,7 @@ def get_player_ji_scores(marker_tag, player: PlayerData):
 
 def get_player_follower_score(marker_tag, player: PlayerData):
     sparc_scores, jerk_scores, log_jerk_scores = [], [], []
-    for i, filename in enumerate(player.follower_filename):
+    for i, filename in enumerate(player.follower_filenames):
         follower_filepath = os.path.join(DATA_FILES_PATH, filename)
         qtm_obj = QTM(follower_filepath, save_path=get_dump_path(follower_filepath), load=load_from_dump,
                             num_of_subjects=2, markers_permutation_vector=markers_permutation_vector, skeleton=skeleton, fix_jumps=fix_jumps, interpolate=True, smoothing_factor=smoothing_factor)
