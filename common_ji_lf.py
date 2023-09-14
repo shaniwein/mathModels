@@ -2,17 +2,21 @@ import numpy as np
 from enum import Enum
 from collections import namedtuple
 
-PlayerData = namedtuple("PlayerData", ["id", "ji_filenames", "follower_filenames", "follower_indexs"])
+PlayerData = namedtuple("PlayerData", ["id", "ji_filenames", "follower_filenames", "follower_indexs", "leader_filenames", "leader_indexs"])
 
 players_data = [
     PlayerData(id=33, ji_filenames=["a.player33_player36_ji.mat", "b.player33_player36_ji.mat", "player33_player34_ji.mat", "player33_player35_ji.mat"],
-               follower_filenames=["player33_player34_lf_34_1.mat", "player33_player34_lf_34_2.mat"], follower_indexs = [0,0]),
+               follower_filenames=["player33_player34_lf_34_1.mat", "player33_player34_lf_34_2.mat"], follower_indexs = [0,0],
+               leader_filenames=["player33_player34_lf_33_1.mat"], leader_indexs=[0]),
     PlayerData(id=34, ji_filenames=["player33_player34_ji.mat", "player34_player35_ji.mat", "player34_player36_ji.mat"],
-               follower_filenames=["player33_player34_lf_33_1.mat", "player35_player34_lf_35.mat"], follower_indexs = [1,0]),
+               follower_filenames=["player33_player34_lf_33_1.mat", "player35_player34_lf_35.mat"], follower_indexs = [1,0],
+               leader_filenames=["player33_player34_lf_34_1.mat", "player33_player34_lf_34_2.mat", "player35_player34_lf_34.mat"], leader_indexs=[1, 1, 0]),
     PlayerData(id=35, ji_filenames=["player33_player35_ji.mat", "player34_player35_ji.mat", "player35_player36_ji.mat"],
-               follower_filenames=["player35_player36_lf_36.mat", "player35_player34_lf_34.mat"], follower_indexs =[0, 1]),
+               follower_filenames=["player35_player36_lf_36.mat", "player35_player34_lf_34.mat"], follower_indexs =[0, 1],
+               leader_filenames=["player35_player34_lf_35.mat", "player35_player36_lf_35.mat"], leader_indexs=[1, 0]),
     PlayerData(id=36, ji_filenames=["a.player33_player36_ji.mat", "b.player33_player36_ji.mat", "player34_player36_ji.mat", "player35_player36_ji.mat"],
-               follower_filenames=["player35_player36_lf_35.mat"], follower_indexs=[1])
+               follower_filenames=["player35_player36_lf_35.mat"], follower_indexs=[1],
+               leader_filenames=["player35_player36_lf_36.mat"], leader_indexs=[1])
 ]
 
 marker_tags = [
@@ -25,6 +29,18 @@ marker_tags = [
     "LKneeOut",
     "RKneeOut",
 ]
+
+# Note: JI marker order is the same as in solo
+marker_tags_to_ji_marker_id = {
+    "HeadFront": 2,
+    "LElbowOut": 7,
+    "LHand2": 9,
+    "RElbowOut": 12,
+    "RHand2": 14,
+    "WaistBack": 17,
+    "LKneeOut": 21,
+    "RKneeOut": 28
+}
 
 def select_markers(qtm_obj, player, ind):
     """
