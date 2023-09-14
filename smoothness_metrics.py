@@ -6,7 +6,7 @@ Based on 'A Robust and Sensitive Metric for Quantifying Movement Smoothness'
 smoothness.py contains a list of functions for estimating movement smoothness.
 """
 import numpy as np
-
+from scipy.signal import find_peaks
 
 def sparc(movement, fs, padlevel=4, fc=10.0, amp_th=0.05):
     """
@@ -271,3 +271,85 @@ def log_dimensionless_jerk2(movement, fs, data_type='speed'):
 
     """
     return -np.log(abs(dimensionless_jerk2(movement, fs, data_type)))
+
+#### Added by me
+
+def velocity_peaks_per_meter(velocity, fs, min_peak_prominence=0.05):
+    """
+    Calculates the number of velocity peaks per meter (NP).
+
+    Parameters
+    ----------
+    velocity : np.array
+               The array containing the velocity profile.
+    fs       : float
+               The sampling frequency of the velocity data.
+    min_peak_prominence : float, optional
+                          The minimum prominence required for a peak to be considered.
+
+    Returns
+    -------
+    np : float
+         The number of velocity peaks per meter.
+
+    Notes
+    -----
+    This function calculates the number of velocity peaks per meter.
+
+    Examples
+    --------
+    >>> t = np.arange(0, 1, 1/fs)
+    >>> velocity = np.sin(2 * np.pi * 1 * t) + 0.1 * np.random.randn(len(t))
+    >>> np = velocity_peaks_per_meter(velocity, fs=100., min_peak_prominence=0.05)
+    >>> '%.5f' % np
+    '1.00000'
+
+    """
+    # Find peaks in the velocity profile
+    peaks, _ = find_peaks(velocity, prominence=min_peak_prominence)
+    
+    # Calculate the number of peaks per meter
+    num_peaks = len(peaks)
+    duration = len(velocity) / fs
+    num_peaks_per_meter = num_peaks / duration
+    
+    return -num_peaks_per_meter
+
+# Note: The is the only metric that returns a positive value. As the motion is smoother, the ration will be closer to 1.
+def speed_metric(velocity):
+    """
+    Calculates the speed metric as the ratio of average velocity to maximum velocity.
+
+    Parameters
+    ----------
+    velocity : np.array
+               The array containing the velocity profile.
+
+    Returns
+    -------
+    speed : float
+            The speed metric, which is the average velocity divided by the maximum velocity.
+
+    Notes
+    -----
+    This function calculates the speed metric.
+
+    Examples
+    --------
+    >>> t = np.arange(0, 1, 0.01)
+    >>> velocity = np.sin(2 * np.pi * 1 * t) + 0.1 * np.random.randn(len(t))
+    >>> speed = speed_metric(velocity)
+    >>> '%.5f' % speed
+    '0.90909'
+
+    """
+    # Calculate the average velocity
+    average_velocity = np.mean(velocity)
+    
+    # Calculate the maximum velocity
+    max_velocity = np.max(velocity)
+    
+    # Calculate the speed metric
+    speed = average_velocity / max_velocity
+    
+    return speed

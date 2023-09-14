@@ -1,7 +1,7 @@
 from matplotlib import pyplot as plt
 import numpy as np
 import math
-from mathModels.smoothness_metrics import sparc, dimensionless_jerk, log_dimensionless_jerk
+from mathModels.smoothness_metrics import sparc, dimensionless_jerk, log_dimensionless_jerk, velocity_peaks_per_meter, speed_metric
 
 class SmoothnessMeasurement:
     
@@ -54,15 +54,23 @@ class SmoothnessMeasurement:
     def get_log_dimensionless_jerk(self, data=None):
         data = self.speed_profile if data is None else data
         return log_dimensionless_jerk(self.speed_profile, fs=self.sample_freq)
-
-    def print_smoothness_scores(self):
-        print(f"SPARC: {self.get_sparc()[0]}")
-        print(f"Dimensionless jerk: {self.get_dimensionless_jerk()}")
-        print(f"Log dimensionless jerk: {self.get_log_dimensionless_jerk()}")
     
-    def get_scores_by_marker(self, marker):
-        data = self.get_speed_profille_by_marker(marker)
-        return self.get_sparc(data)[0], self.get_dimensionless_jerk(data), self.get_log_dimensionless_jerk(data)
+    def get_velocity_peaks_per_meter(self, data=None):
+        data = self.speed_profile if data is None else data
+        return velocity_peaks_per_meter(data, fs=self.sample_freq)
+
+    def get_speed_metric(self, data=None):
+        data = self.speed_profile if data is None else data
+        return speed_metric(data)
+
+    # def print_smoothness_scores(self):
+    #     print(f"SPARC: {self.get_sparc()[0]}")
+    #     print(f"Dimensionless jerk: {self.get_dimensionless_jerk()}")
+    #     print(f"Log dimensionless jerk: {self.get_log_dimensionless_jerk()}")
+    
+    # def get_scores_by_marker(self, marker):
+    #     data = self.get_speed_profille_by_marker(marker)
+    #     return self.get_sparc(data)[0], self.get_dimensionless_jerk(data), self.get_log_dimensionless_jerk(data)
 
     def plot_positions(self):
         fig, axes = plt.subplots(3, 1)
@@ -82,12 +90,12 @@ class SmoothnessMeasurement:
         plt.plot(self.speed_profile, label="Speed profile")
         plt.show()
     
-    def plot_grid_of_speed_profile_of_markers(self):
-        fig, axs = plt.subplots(3, 3)
-        for i, ax in enumerate(axs.flat):
-            ax.plot(self.qtm_obj.velocities[self.object, i, :, self.start_frame:self.end_frame].T)
-            ax.set_title(f"Marker {i}", fontsize=10)
-        plt.show()
+    # def plot_grid_of_speed_profile_of_markers(self):
+    #     fig, axs = plt.subplots(3, 3)
+    #     for i, ax in enumerate(axs.flat):
+    #         ax.plot(self.qtm_obj.velocities[self.object, i, :, self.start_frame:self.end_frame].T)
+    #         ax.set_title(f"Marker {i}", fontsize=10)
+    #     plt.show()
     
     def plot_frequency_and_magnitude(self):
         _, fmf, fmf_sel = self.get_sparc()
@@ -103,19 +111,19 @@ class SmoothnessMeasurement:
         ax.legend()
         plt.show()
     
-    def plot_sparc_as_func_of_amp_th_param(self):
-        _, ax = plt.subplots()
-        amp_th_range = np.arange(0, 1, 0.01)
-        scores = []
-        for i in amp_th_range:
-            scores.append(self.get_sparc(amp_th=i)[0])
-        ax.scatter(amp_th_range, scores)
-        ax.set_title(f"Sparc score as a function of amplitude threshold (segement {self.segment_start}-{self.segment_end})", **self.title_params)
-        ax.set_xlabel("Amplitude Threshold", fontsize=self.fontsize-4)
-        ax.set_ylabel("Score", fontsize=self.fontsize-4)
-        ax.tick_params(axis='both', which='major', labelsize=self.labelsize)
-        ax.legend()
-        plt.show()
+    # def plot_sparc_as_func_of_amp_th_param(self):
+    #     _, ax = plt.subplots()
+    #     amp_th_range = np.arange(0, 1, 0.01)
+    #     scores = []
+    #     for i in amp_th_range:
+    #         scores.append(self.get_sparc(amp_th=i)[0])
+    #     ax.scatter(amp_th_range, scores)
+    #     ax.set_title(f"Sparc score as a function of amplitude threshold (segement {self.segment_start}-{self.segment_end})", **self.title_params)
+    #     ax.set_xlabel("Amplitude Threshold", fontsize=self.fontsize-4)
+    #     ax.set_ylabel("Score", fontsize=self.fontsize-4)
+    #     ax.tick_params(axis='both', which='major', labelsize=self.labelsize)
+    #     ax.legend()
+    #     plt.show()
 
 def plot_all_coords_by_marker(marker, qtm_obj, object, segment_margin, file_name=""):
     frame_margin = int(segment_margin * qtm_obj.frame_rate)
@@ -135,35 +143,31 @@ def plot_all_coords_by_marker(marker, qtm_obj, object, segment_margin, file_name
 """
 Returns the mean scores of sparc and jerk calculated on the data without segment_margin at beggining and end in segments of segment_size.
 """
-def get_scores_for_all_segments(qtm_obj, object, marker, segment_size=30, segment_margin=0, sample_freq=500, padlevel=4, freq_cutoff=5, amp_th=0.05):
-    scores = {"sparc": [], "jerk": [], "log_jerk": []}
+def get_scores_for_segments_by_segment_size(qtm_obj, object, marker, segment_size=30, segment_margin=0, sample_freq=500, padlevel=4, freq_cutoff=5, amp_th=0.05):
+    scores = {"sparc": [], "jerk": [], "log_jerk": [], "velocity_peaks": [], "mean_speed": []}
     total_size = len(qtm_obj.data[object, marker, 0, :])
     # Segments of segment_size seconds
     number_of_segments = math.ceil((total_size / qtm_obj.frame_rate) / segment_size) - (segment_margin * 2)
-    # print(f"total size (num of frames): {total_size}, number of segments: {number_of_segments})")
     smoothness_comparator = SmoothnessMeasurement(qtm_obj, object, marker, sample_freq=sample_freq, padlevel=padlevel, freq_cutoff=freq_cutoff, amp_th=amp_th)
-    # print(f"ITERATING FROM {segment_margin} TO {number_of_segments * segment_size} (jumps of {segment_size})")
     for i, segment_start in enumerate(np.arange(segment_margin, number_of_segments * segment_size, segment_size)):
-        # print(f"Seg number {i}: {segment_start} - {segment_start + segment_size}")
         smoothness_comparator.set_segment_start(segment_start)
         smoothness_comparator.set_segment_end(segment_start + segment_size)
         if segment_start + segment_size > number_of_segments * segment_size:
-            # print(f"breaking at {segment_start} because {segment_start + segment_size} > {number_of_segments * segment_size}")
             break
         try:
             if smoothness_comparator.speed_profile.shape[0] == 0:
-                print("continuing")
                 continue
             sparc_score_of_seg = smoothness_comparator.get_sparc()[0]
             jerk_score_of_seg = smoothness_comparator.get_dimensionless_jerk()
             log_jerk_score_of_seg = smoothness_comparator.get_log_dimensionless_jerk()
+            velocity_peaks_of_seg = smoothness_comparator.get_velocity_peaks_per_meter()
+            mean_speed_of_seg = smoothness_comparator.get_speed_metric()
             scores["sparc"].append(sparc_score_of_seg)
             scores["jerk"].append(jerk_score_of_seg)
             scores["log_jerk"].append(log_jerk_score_of_seg)
-            # print(f"Scores for segment {segment_start} - {segment_start + segment_size}: sparc {sparc_score_of_seg}, jerk {jerk_score_of_seg}")
+            scores["velocity_peaks"].append(velocity_peaks_of_seg)
+            scores["mean_speed"].append(mean_speed_of_seg)
         except ZeroDivisionError:
             print(f"got zero division error for segment {segment_start}-{segment_start+segment_size}")
             break
-    # print(f"returning scores: {scores}")
     return scores
-    # return np.mean(scores["sparc"]), np.mean(scores["jerk"])
