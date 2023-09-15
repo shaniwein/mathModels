@@ -6,7 +6,7 @@ import scipy.stats
 from collections import namedtuple, defaultdict
 from matplotlib import pyplot as plt
 from qtmWrapper.qtm import QTM
-from common_ji_lf import PlayerData, players_data, select_marker_by_tag, marker_tags_to_ji_marker_id
+from common_ji_lf import PlayerData, players_data, select_marker_by_tag, marker_tags_to_ji_marker_id, marker_tags
 import smoothnessMeasurement
 
 SmoothnessScore = namedtuple("SmoothnessScore", ["sparc", "jerk", "log_jerk", "velocity_peaks", "mean_speed"])
@@ -115,63 +115,53 @@ def plot_percentage_bar_chart(ax, percentages, scores, label):
     ax.set_xlabel("Marker", fontsize=8)
     ax.set_ylabel("Percentage", fontsize=8)
     ax.tick_params(axis="x", labelsize=7, rotation=40)
-    ax.set_ylim(0, 100)
+    ax.set_ylim(-5, 105)
 
 def plot_percentage_scatter_chart(ax, segment_size_to_marker_to_percentage, label):
     # Data format: {segment_size: {marker: percentage}}
     # The x axis is the marker, the y axis is the percentage, and the color is the segment size
+    label_colors = {"3": "green", "5": "blue", "10": "red", "30": "black"}
+    # Define marker styles for each segment size
+    marker_styles = {"3": 'o', "5": 's', "10": '^', "30": 'D'}
+    handles = []  # List to store legend handles
     for segment_size, marker_to_percentage in segment_size_to_marker_to_percentage.items():
         for marker, percentage in marker_to_percentage.items():
-            ax.scatter(marker, percentage, color=f"C{segment_size}", alpha=0.7)
+            scatter = ax.scatter(marker, percentage, color=label_colors[str(segment_size)], marker=marker_styles[str(segment_size)], facecolors='none', edgecolors=label_colors[str(segment_size)])
+        handles.append(scatter)  # Add scatter plot as a legend handle
     ax.set_title(f"{label}", fontsize=10, loc="left")
     ax.set_xlabel("Marker", fontsize=8)
-    ax.set_ylabel("Percentage", fontsize=8)
-    ax.legend(title="Segment size", loc='upper right', bbox_to_anchor=(1.5, 1))
+    # ax.set_ylabel("Percentage", fontsize=8)
+    ax.xaxis.set_ticks(marker_tags)
     ax.tick_params(axis="x", labelsize=7, rotation=40)
-    ax.set_ylim(0, 100)
-      
-def scatter_sig_diff_percentages_per_marker_and_segment_size_for_each_marker(segment_size_to_list_of_percentages):
-# def scatter_sig_diff_percentages_per_marker_and_segment_size_for_each_marker(sparc_percentages, jerk_percentages, log_jerk_percentages, velocity_peaks_percentages, mean_speed_percentages):
+    ax.set_ylim(-5, 105)
+    return handles  # Return the handles for creating the legend
+
+def scatter_sig_diff_percentages_per_marker_and_segment_size_for_each_marker(segment_size_to_list_of_percentages, task_title):
     # Data format: {segment_size: [{marker: sparc_percentage}, ... , {marker: dlj_percentage}, ...]}
-    sparc_percentages, jerk_percentages, log_jerk_percentages, velocity_peaks_percentages, mean_speed_percentages = [], [], [], [], []
+    sparc_percentages, jerk_percentages, log_jerk_percentages, velocity_peaks_percentages, mean_speed_percentages = {}, {}, {}, {}, {}
     for segment_size, list_of_percentages in segment_size_to_list_of_percentages.items():
-        sparc_percentages.append({segment_size: list_of_percentages[0]})
-        jerk_percentages.append({segment_size: list_of_percentages[1]})
-        log_jerk_percentages.append({segment_size: list_of_percentages[2]})
-        velocity_peaks_percentages.append({segment_size: list_of_percentages[3]})
-        mean_speed_percentages.append({segment_size: list_of_percentages[4]})
-    _, (ax1, ax2, ax3, ax4, ax5) = plt.subplots(1, 5)
-    plot_percentage_scatter_chart(ax1, sparc_percentages, "SPARC")
-    plot_percentage_scatter_chart(ax2, jerk_percentages, "DLJ")
-    plot_percentage_scatter_chart(ax3, log_jerk_percentages, "LDLJ")
-    plot_percentage_scatter_chart(ax4, velocity_peaks_percentages, "VP")
-    plot_percentage_scatter_chart(ax5, mean_speed_percentages, "MS")
-    plt.suptitle("Percentage of dancers with significant differences in smoothness scores", fontsize=12)
-    plt.tight_layout()
+        sparc_percentages[segment_size] = list_of_percentages[0]
+        jerk_percentages[segment_size] = list_of_percentages[1]
+        log_jerk_percentages[segment_size] = list_of_percentages[2]
+        velocity_peaks_percentages[segment_size] = list_of_percentages[3]
+        mean_speed_percentages[segment_size] = list_of_percentages[4]
+    fig, (ax1, ax2, ax3, ax4, ax5) = plt.subplots(1, 5, sharey=True)
+    handles1 = plot_percentage_scatter_chart(ax1, sparc_percentages, "SPARC")
+    handles2 = plot_percentage_scatter_chart(ax2, jerk_percentages, "DLJ")
+    handles3 = plot_percentage_scatter_chart(ax3, log_jerk_percentages, "LDLJ")
+    handles4 = plot_percentage_scatter_chart(ax4, velocity_peaks_percentages, "VP")
+    handles5 = plot_percentage_scatter_chart(ax5, mean_speed_percentages, "MS")
+    plt.suptitle(f"{task_title}: Percentage of dancers with significant differences in smoothness scores", fontsize=12)
+    
+    # Combine all handles from previous subplots
+    all_handles = handles1 + handles2 + handles3 + handles4 + handles5
+
+    # Create a single legend map only once in the 5th subplot
+    ax5.legend(all_handles, ["3", "5", "10", "30"], title="Segment Size (sec)", loc='upper right', bbox_to_anchor=(1.5, 1))
+
+    ax1.set_ylabel("Percentage (%)", fontsize=8)
     plt.show()
-   
-# def plot_the_percentage_of_significant_differences_per_marker(scores):
-#     sparc_percentages, jerk_percentages, log_jerk_percentages = [], [], []
-#     for marker, player_dicts in scores.items():
-#         sparc_p_values, jerk_p_values, log_jerk_p_values, velocity_peaks_p_values, mean_speed_p_values = [], [], [], [], []
-#         for player, player_scores in player_dicts.items():
-#             sparc_p_values.append(player_scores["sparc_p"])
-#             jerk_p_values.append(player_scores["jerk_p"])
-#             log_jerk_p_values.append(player_scores["log_jerk_p"])
-#             velocity_peaks_p_values.append(player_scores["velocity_peaks_p"])
-#             mean_speed_p_values.append(player_scores["mean_speed_p"])
-#         sparc_p_values = np.array(sparc_p_values)
-#         jerk_p_values = np.array(jerk_p_values)
-#         log_jerk_p_values = np.array(log_jerk_p_values)
-#         sparc_percentages.append(np.sum(sparc_p_values < 0.05) / len(sparc_p_values) * 100)
-#         jerk_percentages.append(np.sum(jerk_p_values < 0.05) / len(jerk_p_values) * 100)
-#         log_jerk_percentages.append(np.sum(log_jerk_p_values < 0.05) / len(log_jerk_p_values) * 100)
-#     _, (ax1, ax2) = plt.subplots(1, 2)
-#     plot_percentage_bar_chart(ax1, sparc_percentages, scores, "SPARC Metric")
-#     plot_percentage_bar_chart(ax2, jerk_percentages, scores, "Dimenssionless Jerk Metric")
-#     plt.suptitle("Percentage of dancers with significant differences in smoothness scores", fontsize=12)
-#     plt.tight_layout()
-#     plt.show()
+    plt.savefig(f"{task_title}_percentage.svg", format="svg", bbox_inches="tight")
 
 def plot_p_values_per_player(scores):
     fig, axes = plt.subplots(1, 4, sharey=True, figsize=(15, 5))
@@ -197,58 +187,6 @@ def plot_p_values_per_player(scores):
     axes[-1].legend(loc='upper right', bbox_to_anchor=(2, 1)) 
     plt.tight_layout()
     plt.show()
-
-# """
-# Find differences between the smoothness of the follower and leader in the LF task for each marker and for each measure.
-# This is similar to the analysis done in the paper "The mirror game as a paradigm for studying the dynamics of two people improvising motion together"
-# """
-# def plot_the_percentage_of_significant_differences_in_leader_and_follower_per_marker(scores):
-#     sparc_percentages, jerk_percentages, log_jerk_percentages = [], [], []
-#     for marker, player_dicts in scores.items():
-#         sparc_p_values = []
-#         jerk_p_values = []
-#         log_jerk_p_values = []
-#         for _, player_scores in player_dicts.items():
-#             sparc_p_values.append(player_scores["leader_follower_sparc_p"])
-#             jerk_p_values.append(player_scores["leader_follower_jerk_p"])
-#             log_jerk_p_values.append(player_scores["leader_follower_log_jerk_p"])
-#         sparc_p_values = np.array(sparc_p_values)
-#         jerk_p_values = np.array(jerk_p_values)
-#         log_jerk_p_values = np.array(log_jerk_p_values)
-#         sparc_percentages.append(np.sum(sparc_p_values < 0.05) / len(sparc_p_values) * 100)
-#         jerk_percentages.append(np.sum(jerk_p_values < 0.05) / len(jerk_p_values) * 100)
-#         log_jerk_percentages.append(np.sum(log_jerk_p_values < 0.05) / len(log_jerk_p_values) * 100)
-#     _, (ax1, ax2) = plt.subplots(1, 2)
-#     plot_percentage_bar_chart(ax1, sparc_percentages, scores, "SPARC Metric")
-#     plot_percentage_bar_chart(ax2, jerk_percentages, scores, "Dimenssionless Jerk Metric")
-#     plt.suptitle("Percentage of dancers with significant differences between their roles as leaderer and as follower", fontsize=12)
-#     plt.tight_layout()
-#     plt.show()
-
-# def plot_p_values_per_player_leader_follower(scores):
-#     fig, axes = plt.subplots(1, 4, sharey=True, figsize=(15, 5))
-#     fig.suptitle(f"p-values of smoothness scores for each player", fontsize=12)
-#     players_sparc_p_val_per_marker = defaultdict(dict)
-#     players_jerk_p_val_per_marker = defaultdict(dict)
-#     players_log_jerk_p_val_per_marker = defaultdict(dict)
-#     for marker, player_dicts in scores.items():
-#         for player, player_scores in player_dicts.items():
-#             players_sparc_p_val_per_marker[player][marker] = player_scores["leader_follower_sparc_p"]
-#             players_jerk_p_val_per_marker[player][marker] = player_scores["leader_follower_jerk_p"]
-#             players_log_jerk_p_val_per_marker[player][marker] = player_scores["leader_follower_log_jerk_p"]
-#     for i, (player, markers_to_sparc_p_vals) in enumerate(players_sparc_p_val_per_marker.items()):
-#         axes[i].set_title(f"player {player} (leader-follower)")
-#         axes[i].set_ylabel("log pvalue")
-#         axes[i].set_xlabel("marker")
-#         axes[i].scatter(list(markers_to_sparc_p_vals.keys()), np.log(list(markers_to_sparc_p_vals.values())), label="SPARC", color="blue", alpha=0.7)
-#         axes[i].tick_params(axis="x", labelsize=7, rotation=40)
-#     for i, (player, markers_to_jerk_p_vals) in enumerate(players_jerk_p_val_per_marker.items()):
-#         axes[i].scatter(list(markers_to_jerk_p_vals.keys()), np.log(list(markers_to_jerk_p_vals.values())), label="Jerk", color="green", alpha=0.7)
-#     for ax in axes:
-#         ax.axhline(y=np.log(0.05), color='red', label='log(0.05)')
-#     axes[-1].legend(loc='upper right', bbox_to_anchor=(2, 1)) 
-#     plt.tight_layout()
-#     plt.show()
 
 def get_data_metric_scores(segment_size):
     marker_to_participant_scores = dict()
@@ -289,16 +227,18 @@ def mann_whitney_by_marker_and_player_for_each_metric(scores, group1, group2):
     for marker_tag in marker_tags_to_ji_marker_id.keys():
         marker_to_participant_scores[marker_tag] = dict()
         for player in players_data:
-            sparc_u, sparc_p = scipy.stats.mannwhitneyu(scores[marker_tag][player.id][group1].sparc, scores[marker_tag][player.id][group2].sparc)
-            jerk_u, jerk_p = scipy.stats.mannwhitneyu(scores[marker_tag][player.id][group1].jerk, scores[marker_tag][player.id][group2].jerk)
-            log_jerk_u, log_jerk_p = scipy.stats.mannwhitneyu(scores[marker_tag][player.id][group1].log_jerk, scores[marker_tag][player.id][group2].log_jerk)
-            velocity_peaks_u, velocity_peaks_p = scipy.stats.mannwhitneyu(scores[marker_tag][player.id][group1].velocity_peaks, scores[marker_tag][player.id][group2].velocity_peaks)
-            mean_speed_u, mean_speed_p = scipy.stats.mannwhitneyu(scores[marker_tag][player.id][group1].mean_speed, scores[marker_tag][player.id][group2].mean_speed)
-            marker_to_participant_scores[marker_tag][player.id]["sparc_p"] = sparc_p
-            marker_to_participant_scores[marker_tag][player.id]["jerk_p"] = jerk_p
-            marker_to_participant_scores[marker_tag][player.id]["log_jerk_p"] = log_jerk_p
-            marker_to_participant_scores[marker_tag][player.id]["velocity_peaks_p"] = velocity_peaks_p
-            marker_to_participant_scores[marker_tag][player.id]["mean_speed_p"] = mean_speed_p
+            player_id = str(player.id)
+            marker_to_participant_scores[marker_tag][player_id] = dict()
+            sparc_u, sparc_p = scipy.stats.mannwhitneyu(scores[marker_tag][player_id][group1][0], scores[marker_tag][player_id][group2][0])
+            jerk_u, jerk_p = scipy.stats.mannwhitneyu(scores[marker_tag][player_id][group1][1], scores[marker_tag][player_id][group2][1])
+            log_jerk_u, log_jerk_p = scipy.stats.mannwhitneyu(scores[marker_tag][player_id][group1][2], scores[marker_tag][player_id][group2][2])
+            velocity_peaks_u, velocity_peaks_p = scipy.stats.mannwhitneyu(scores[marker_tag][player_id][group1][3], scores[marker_tag][player_id][group2][3])
+            mean_speed_u, mean_speed_p = scipy.stats.mannwhitneyu(scores[marker_tag][player_id][group1][4], scores[marker_tag][player_id][group2][4])
+            marker_to_participant_scores[marker_tag][player_id]["sparc_p"] = sparc_p
+            marker_to_participant_scores[marker_tag][player_id]["jerk_p"] = jerk_p
+            marker_to_participant_scores[marker_tag][player_id]["log_jerk_p"] = log_jerk_p
+            marker_to_participant_scores[marker_tag][player_id]["velocity_peaks_p"] = velocity_peaks_p
+            marker_to_participant_scores[marker_tag][player_id]["mean_speed_p"] = mean_speed_p
     return marker_to_participant_scores
 
 def get_full_data_scores():
@@ -316,19 +256,17 @@ def get_full_data_scores():
 
 def main():
     segment_size_to_marker_to_participant_scores = get_full_data_scores()
-    ji_follower_comparison_p_vals = dict()
-    leader_follower_comparison_p_vals = dict()
-    ji_follower_percentages_by_segment_size = list()
-    leader_follower_percentages_by_segment_size = list()
+    ji_follower_comparison_p_vals, leader_follower_comparison_p_vals = dict(), dict()
+    ji_follower_percentages_by_segment_size, leader_follower_percentages_by_segment_size = dict(), dict()
     for segment_size, marker_to_participant_scores in segment_size_to_marker_to_participant_scores.items():
         # JI vs follower comparison
         ji_follower_comparison_p_vals[segment_size] = mann_whitney_by_marker_and_player_for_each_metric(marker_to_participant_scores, group1="ji", group2="follower")
-        ji_follower_percentages_by_segment_size[segment_size]= get_percentage_of_significant_diff_per_marker_for_each_metric(ji_follower_comparison_p_vals[segment_size])
+        ji_follower_percentages_by_segment_size[segment_size] = get_percentage_of_significant_diff_per_marker_for_each_metric(ji_follower_comparison_p_vals[segment_size])
         # Leader vs follower comparison
         leader_follower_comparison_p_vals[segment_size] = mann_whitney_by_marker_and_player_for_each_metric(marker_to_participant_scores, group1="leader", group2="follower")
         leader_follower_percentages_by_segment_size[segment_size] = get_percentage_of_significant_diff_per_marker_for_each_metric(leader_follower_comparison_p_vals[segment_size])
-    scatter_sig_diff_percentages_per_marker_and_segment_size_for_each_marker(ji_follower_percentages_by_segment_size) 
-    scatter_sig_diff_percentages_per_marker_and_segment_size_for_each_marker(leader_follower_percentages_by_segment_size)
+    scatter_sig_diff_percentages_per_marker_and_segment_size_for_each_marker(ji_follower_percentages_by_segment_size, "JI vs Follower") 
+    scatter_sig_diff_percentages_per_marker_and_segment_size_for_each_marker(leader_follower_percentages_by_segment_size, "Leader vs Follower")
     # plot_the_percentage_of_significant_differences_per_marker(marker_to_participant_scores)
     # plot_p_values_per_player(marker_to_participant_scores)
     # compare_leader_follower_smoothness_scores(marker_to_participant_scores)
