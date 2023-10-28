@@ -63,15 +63,13 @@ class SmoothnessMeasurement:
         data = self.speed_profile if data is None else data
         return speed_metric(data)
 
-    # def print_smoothness_scores(self):
-    #     print(f"SPARC: {self.get_sparc()[0]}")
-    #     print(f"Dimensionless jerk: {self.get_dimensionless_jerk()}")
-    #     print(f"Log dimensionless jerk: {self.get_log_dimensionless_jerk()}")
+    def print_smoothness_scores(self):
+        print(f"SPARC: {self.get_sparc()[0]}")
+        print(f"Dimensionless jerk: {self.get_dimensionless_jerk()}")
+        print(f"Log dimensionless jerk: {self.get_log_dimensionless_jerk()}")
+        print(f"Velocity peaks per meter: {self.get_velocity_peaks_per_meter()}")
+        print(f"Speed metric: {self.get_speed_metric()}")
     
-    # def get_scores_by_marker(self, marker):
-    #     data = self.get_speed_profille_by_marker(marker)
-    #     return self.get_sparc(data)[0], self.get_dimensionless_jerk(data), self.get_log_dimensionless_jerk(data)
-
     def plot_positions(self):
         fig, axes = plt.subplots(3, 1)
         title_params = dict(fontsize=8, loc="left")
@@ -87,15 +85,12 @@ class SmoothnessMeasurement:
         plt.show()
 
     def plot_speed_profile(self):
-        plt.plot(self.speed_profile, label="Speed profile")
+        title_params = dict(fontsize=10, loc="left")
+        plt.plot(self.qtm_obj.time[self.start_frame:self.end_frame], self.speed_profile)
+        plt.title(f"Speed Profile (Segment {self.segment_start}-{self.segment_end})", **title_params)
+        plt.xlabel("Time [Sec]", fontsize=self.fontsize-2)
+        plt.ylabel("Speed", fontsize=self.fontsize-2)
         plt.show()
-    
-    # def plot_grid_of_speed_profile_of_markers(self):
-    #     fig, axs = plt.subplots(3, 3)
-    #     for i, ax in enumerate(axs.flat):
-    #         ax.plot(self.qtm_obj.velocities[self.object, i, :, self.start_frame:self.end_frame].T)
-    #         ax.set_title(f"Marker {i}", fontsize=10)
-    #     plt.show()
     
     def plot_frequency_and_magnitude(self):
         _, fmf, fmf_sel = self.get_sparc()
@@ -111,20 +106,6 @@ class SmoothnessMeasurement:
         ax.legend()
         plt.show()
     
-    # def plot_sparc_as_func_of_amp_th_param(self):
-    #     _, ax = plt.subplots()
-    #     amp_th_range = np.arange(0, 1, 0.01)
-    #     scores = []
-    #     for i in amp_th_range:
-    #         scores.append(self.get_sparc(amp_th=i)[0])
-    #     ax.scatter(amp_th_range, scores)
-    #     ax.set_title(f"Sparc score as a function of amplitude threshold (segement {self.segment_start}-{self.segment_end})", **self.title_params)
-    #     ax.set_xlabel("Amplitude Threshold", fontsize=self.fontsize-4)
-    #     ax.set_ylabel("Score", fontsize=self.fontsize-4)
-    #     ax.tick_params(axis='both', which='major', labelsize=self.labelsize)
-    #     ax.legend()
-    #     plt.show()
-
 def plot_all_coords_by_marker(marker, qtm_obj, object, segment_margin, file_name=""):
     frame_margin = int(segment_margin * qtm_obj.frame_rate)
     fig, axes = plt.subplots(3, 1)
@@ -171,3 +152,81 @@ def get_scores_for_segments_by_segment_size(qtm_obj, object, marker, segment_siz
             print(f"got zero division error for segment {segment_start}-{segment_start+segment_size}")
             break
     return scores
+
+def run_analytics_on_syntetic_data():
+    import numpy as np
+    sampling_rate = 1000
+    duration = 5
+    frequency_low = 0.5 # Hz
+    frequency_high = 2.5 # Hz
+
+    t = np.linspace(0, duration, int(sampling_rate * duration), endpoint=False)
+    low_frequency_signal = np.sin(2 * np.pi * frequency_low * t)
+    high_frequency_signal = np.sin(2 * np.pi * frequency_high * t)
+    synthetic_signal = low_frequency_signal + high_frequency_signal
+
+    # Plot the synthetic signal and print its smoothness metrics scores
+    plt.figure(figsize=(10, 6))
+    plt.plot(t, synthetic_signal)
+    plt.xlabel('Time (s)')
+    plt.ylabel('Amplitude')
+    plt.title('Synthetic Data with Low and High Frequencies')
+    plt.grid(True)
+    plt.show()
+
+    sal, _, _ = sparc(synthetic_signal, sampling_rate)
+    dl = dimensionless_jerk(synthetic_signal, sampling_rate)
+    ldl = log_dimensionless_jerk(synthetic_signal, sampling_rate)
+    vp = velocity_peaks_per_meter(synthetic_signal, sampling_rate)
+    speed = speed_metric(synthetic_signal)
+    print("Low and High Frequency Signal")
+    print('Spectral Arc Length: %.5f' % sal)
+    print('Dimensionless Jerk: %.5f' % dl)
+    print('Log Dimensionless Jerk: %.5f' % ldl)
+    print('Number of Velocity Peaks per Meter: %.5f' % vp)
+    print('Speed Metric: %.5f' % speed)
+    print()
+    
+    # Plot and print for low frequency signal
+    plt.figure(figsize=(10, 6))
+    plt.plot(t, low_frequency_signal)
+    plt.xlabel('Time (s)')
+    plt.ylabel('Amplitude')
+    plt.title('Low Frequency Signal')
+    plt.grid(True)
+    plt.show()
+
+    sal, _, _ = sparc(low_frequency_signal, sampling_rate)
+    dl = dimensionless_jerk(low_frequency_signal, sampling_rate)
+    ldl = log_dimensionless_jerk(low_frequency_signal, sampling_rate)
+    vp = velocity_peaks_per_meter(low_frequency_signal, sampling_rate)
+    speed = speed_metric(low_frequency_signal)
+    print("Low Frequency Signal")
+    print('Spectral Arc Length: %.5f' % sal)
+    print('Dimensionless Jerk: %.5f' % dl)
+    print('Log Dimensionless Jerk: %.5f' % ldl)
+    print('Number of Velocity Peaks per Meter: %.5f' % vp)
+    print('Speed Metric: %.5f' % speed)
+    print()
+
+    # Plot and print for high frequency signal
+    plt.figure(figsize=(10, 6))
+    plt.plot(t, high_frequency_signal)
+    plt.xlabel('Time (s)')
+    plt.ylabel('Amplitude')
+    plt.title('High Frequency Signal')
+    plt.grid(True)
+    plt.show()
+
+    sal, _, _ = sparc(high_frequency_signal, sampling_rate)
+    dl = dimensionless_jerk(high_frequency_signal, sampling_rate)
+    ldl = log_dimensionless_jerk(high_frequency_signal, sampling_rate)
+    vp = velocity_peaks_per_meter(high_frequency_signal, sampling_rate)
+    speed = speed_metric(high_frequency_signal)
+    print("High Frequency Signal")
+    print('Spectral Arc Length: %.5f' % sal)
+    print('Dimensionless Jerk: %.5f' % dl)
+    print('Log Dimensionless Jerk: %.5f' % ldl)
+    print('Number of Velocity Peaks per Meter: %.5f' % vp)
+    print('Speed Metric: %.5f' % speed)
+    print()
