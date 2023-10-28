@@ -1,15 +1,10 @@
-"""
-Code from github https://github.com/siva82kb/SPARC/blob/master/scripts/smoothness.py
-Based on 'A Robust and Sensitive Metric for Quantifying Movement Smoothness'
-"""
-"""
-smoothness.py contains a list of functions for estimating movement smoothness.
-"""
 import numpy as np
 from scipy.signal import find_peaks
 
 def sparc(movement, fs, padlevel=4, fc=10.0, amp_th=0.05):
     """
+    Code from github https://github.com/siva82kb/SPARC/blob/master/scripts/smoothness.py
+    
     Calcualtes the smoothness of the given speed profile using the modified
     spectral arc length metric.
 
@@ -90,6 +85,8 @@ def sparc(movement, fs, padlevel=4, fc=10.0, amp_th=0.05):
 
 def dimensionless_jerk(movement, fs):
     """
+    Code from github https://github.com/siva82kb/SPARC/blob/master/scripts/smoothness.py
+    
     Calculates the smoothness metric for the given speed profile using the
     dimensionless jerk metric.
 
@@ -135,6 +132,8 @@ def dimensionless_jerk(movement, fs):
 
 def log_dimensionless_jerk(movement, fs):
     """
+    Code from github https://github.com/siva82kb/SPARC/blob/master/scripts/smoothness.py
+    
     Calculates the smoothness metric for the given speed profile using the
     log dimensionless jerk metric.
 
@@ -169,6 +168,8 @@ def log_dimensionless_jerk(movement, fs):
 
 def dimensionless_jerk2(movement, fs, data_type='speed'):
     """
+    Code from github https://github.com/siva82kb/SPARC/blob/master/scripts/smoothness.py
+
     Calculates the smoothness metric for the given movement data using the
     dimensionless jerk metric. The input movement data can be 'speed',
     'accleration' or 'jerk'.
@@ -236,6 +237,8 @@ def dimensionless_jerk2(movement, fs, data_type='speed'):
 
 def log_dimensionless_jerk2(movement, fs, data_type='speed'):
     """
+    Code from github https://github.com/siva82kb/SPARC/blob/master/scripts/smoothness.py
+    
     Calculates the smoothness metric for the given movement data using the
     log dimensionless jerk metric. The input movement data can be 'speed',
     'accleration' or 'jerk'.
@@ -272,7 +275,6 @@ def log_dimensionless_jerk2(movement, fs, data_type='speed'):
     """
     return -np.log(abs(dimensionless_jerk2(movement, fs, data_type)))
 
-#### Added by me
 
 def velocity_peaks_per_meter(velocity, fs, min_peak_prominence=0.05):
     """
